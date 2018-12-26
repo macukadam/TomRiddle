@@ -1,0 +1,61 @@
+@model core.ViewModel.MemoryHolderViewModel;
+
+<div id="modalHolder" style="display: none;">
+    <div id="modal">
+    </div>
+</div>
+
+<div class="container">
+    <h1 id='heading' class="text-center">Tom Riddle Memory Hall</h1>
+    <hr>
+    <div id="textDiv" style="display:none" class="form-group">
+        <label for="textarea">WikiData data search:</label>
+        <textarea class="form-control" id="textarea" style="resize: none;"></textarea>
+    </div>
+    <div id="minDiv" class="main">
+        <div>
+            <div class="add-memory-header">
+                <div style="display: inline-block; width: 100%;">
+                    <div style="float: right;">
+
+                        <button style="height: 26px;" onclick="searchByInsance()">Search by Instance</button>
+                        <button style="height: 26px;" onclick="getPropertiesFromMemo()">Search by Properities</button>
+                        <button class="btn-primary" id="button-dialog" onclick="autoCompleteSwitch()">WikiData
+                            Annotation</button>
+                    </div>
+                    <div id="queryInputHolder" style="float: right;">
+                        <textarea id="qryinput" type="text" style="resize: none; height: 26px;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <br>
+            <br>
+            <h1 id="memtitle">
+                @Model._memo.MemoryTitle
+            </h1>
+            <span id="hiddenProperties" style="display:none">
+                @Model._items[0].Context
+            </span>
+            <span id="hiddenTitles" style="display:none">
+                @Model._items[1].Context
+            </span>
+            <span id="hiddenSubclasses" style="display:none">
+                @Model._items[2].Context
+            </span>
+            <span id="hiddenInstances" style="display:none">
+                @Model._items[3].Context
+            </span>
+            
+            <div style="width: 100%;" id="editor" class="ql-container ql-snow">
+                <div class="ql-editor" data-gramm="false" contenteditable="true" data-placeholder="Compose an epic...">
+                    @Html.Raw(@Model._memo.Content)
+                </div>
+                <div class="ql-clipboard" contenteditable="true" tabindex="-1"></div>
+                <div class="ql-tooltip ql-hidden"><a class="ql-preview" target="_blank" href="about:blank"></a><input
+                        type="text" data-formula="e=mc^2" data-link="https://quilljs.com" data-video="Embed URL"><a
+                        class="ql-action"></a><a class="ql-remove"></a></div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>

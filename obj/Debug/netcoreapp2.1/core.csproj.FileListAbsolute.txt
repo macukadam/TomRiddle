@@ -15,7 +15,6 @@
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/core.TagHelpers.output.cache
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/core.RazorCoreGenerate.cache
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/Razor/Views/Home/index.g.cshtml.cs
-/Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/Razor/Views/Home/NewApproach.g.cshtml.cs
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/Razor/Views/Shared/Error.g.cshtml.cs
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/Razor/Views/Shared/_CookieConsentPartial.g.cshtml.cs
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/Razor/Views/Shared/_Layout.g.cshtml.cs
@@ -28,3 +27,5 @@
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/core.dll
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/core.pdb
 /Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/core.csproj.CopyComplete
+/Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/Razor/Views/Home/MemoryView.g.cshtml.cs
+/Users/BigMac/Desktop/swe/core/obj/Debug/netcoreapp2.1/Razor/Views/Home/MemoryCreate.g.cshtml.cs

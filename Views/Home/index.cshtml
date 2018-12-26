@@ -1,3 +1,5 @@
+@model List<core.Models.Memories>
+
 <div id="modalHolder" style="display: none;">
     <div id="modal">
     </div>
@@ -26,19 +28,15 @@
             </div>
             <br>
             <br>
-            <div class="jumbotron">
-                <h3>Hello, world!</h3>
-                <p>info info info</p>
-                
-            </div>
-            <div class="jumbotron">
-                <h3><a>Hello, world!</a></h3>
-                <p>info info info</p>
-            </div>
-            <div class="jumbotron">
-                <h3>Hello, world!</h3>
-                <p>info info info</p>
-            </div>
+            @foreach (var title in Model)
+            {
+                <div class="jumbotron">
+                <h3>
+                    <a href="../Home/MemoryView/@title.Id">@title.MemoryTitle</a>
+                </h3>
+                </div>
+            }
+            
         </div>
     </div>
 </div>

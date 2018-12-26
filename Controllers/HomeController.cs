@@ -1,68 +1,94 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using core.Models;
-using Microsoft.AspNetCore.Mvc.ViewEngines;
-using System.IO;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using HtmlAgilityPack;
+using core.ViewModel;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 
 namespace core.Controllers
 {
     public class HomeController : Controller
     {
-        private async Task<string> RenderPartialViewToString(string viewName, object model)
+
+        public MemoryModel _context;
+        public HomeController(MemoryModel context)
         {
-            if (string.IsNullOrEmpty(viewName))
-                viewName = ControllerContext.ActionDescriptor.ActionName;
+            _context = context;
+        }
 
-            ViewData.Model = model;
+        public IActionResult Index()
+        {
+            return View(_context.Memories.ToList());
+        }
 
-            using (var writer = new StringWriter())
+        public IActionResult MemoryView(int id)
+        {
+            var entryPoint = (from ep in _context.Memories
+                              join e in _context.Items on ep.Id equals e.Memo.Id
+                              join t in _context.Types on e.TypeOf.Id equals t.Id
+                              where e.Memo.Id == id
+                              select new
+                              {
+                                  context = e.Context,
+                                  typeId = t.Id,
+                              }).Take(4);
+
+            List<Item> items = new List<Item>();
+            foreach (var item in entryPoint)
             {
-                ViewEngineResult viewResult =
-                    _viewEngine.FindView(ControllerContext, viewName, false);
-
-                ViewContext viewContext = new ViewContext(
-                    ControllerContext,
-                    viewResult.View,
-                    ViewData,
-                    TempData,
-                    writer,
-                    new HtmlHelperOptions()
-                );
-
-                await viewResult.View.RenderAsync(viewContext);
-
-                return writer.GetStringBuilder().ToString();
+                items.Add(new Item() { Id = item.typeId, Context = item.context });
             }
-        }
-        private ICompositeViewEngine _viewEngine;
 
-        public HomeController(ICompositeViewEngine viewEngine)
-        {
-            _viewEngine = viewEngine;
-        }
+            Memories memo = _context.Memories.FirstOrDefault(m => m.Id == id);
 
-        public async Task<IActionResult> Index()
-        {
-            HtmlDocument model = new HtmlDocument();
-    
-            var renderedView = await RenderPartialViewToString("NewApproach", model);
+            MemoryHolderViewModel viewModel = new MemoryHolderViewModel(memo, items);
 
-            model.LoadHtml(renderedView);
-            var title = model.GetElementbyId("hiddenTitles");
-            return View();
+            return View(viewModel);
         }
 
-
-        public IActionResult NewApproach()
+        public IActionResult MemoryCreate()
         {
             return View();
+        }
+
+        public IActionResult Save(MemoryCreateViewModel viewModel)
+        {
+            var memo = _context.Memories.Add(new Memories()
+            {
+                Content = viewModel.Content,
+                MemoryTitle = viewModel.Title
+            });
+
+            _context.Items.AddRange(new List<Item>(){
+                new Item()
+                {
+                    Memo = memo.Entity,
+                    Context = viewModel.HiddenProperties,
+                    TypeOf = _context.Types.SingleOrDefault(t=>t.Id == 1),
+                },
+                new Item()
+                {
+                    Memo = memo.Entity,
+                    Context = viewModel.HiddenTitles,
+                    TypeOf = _context.Types.SingleOrDefault(t=>t.Id == 2),
+                },
+                new Item()
+                {
+                    Memo = memo.Entity,
+                    Context = viewModel.HiddenSubclasses,
+                    TypeOf = _context.Types.SingleOrDefault(t=>t.Id == 3),
+                },
+                new Item()
+                {
+                    Memo = memo.Entity,
+                    Context = viewModel.HiddenInstances,
+                    TypeOf = _context.Types.SingleOrDefault(t=>t.Id == 4),
+                },
+            });
+
+            _context.SaveChanges();
+            return null;
         }
     }
 }

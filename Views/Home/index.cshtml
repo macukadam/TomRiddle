@@ -10,6 +10,7 @@
     <hr>
     <div id="textDiv" style="" class="form-group">
         <textarea class="form-control" id="textarea" style="resize: none;"></textarea>
+        <p id="searchQuery">Search Query:</p>
         <div class="text-center">
             <br>
             <button class="btn-primary" id="button-dialog" onclick="">Tom's Search</button>
@@ -36,7 +37,89 @@
                 </h3>
                 </div>
             }
-            
         </div>
     </div>
 </div>
+
+<script>
+    var array = [];
+    
+    $( document ).ready(function() {
+        annotationAutoCompleteActivateForIndex();
+    });
+
+    function annotationAutoCompleteActivateForIndex() {
+    var words = [];
+    var data = {};
+    $('#textarea').textcomplete([{
+        match: /(^|\b)(\w{2,})$/,
+        search: function (term, callback) {
+
+            data = searchTextOnWikidata($('#textarea').val());
+            words = [];
+            data.search.forEach(element => {
+                words.push(element.label);
+            });
+            callback($.map(words, function (word) {
+                return word;
+            }));
+        },
+        replace: function (word) {
+            var i = 0;
+            var activeLi = $("ul[id*=textcomplete-dropdown] li.active");
+            var activeIndex = activeLi.index();
+            array.push({"data" : word, "title" : data.search[activeIndex].title})
+            $('.ql-editor').append('<a class="wikidata" data-instances="21627" href="' + data.search[i].url + '">' + word + '</a>');
+            annotationAutoCompleteActivate();
+            setTimeout(textReplace(),20);
+            return '';
+        }
+    }], {
+        maxCount: 20,
+        onKeydown: function (e, commands) {
+
+            if (e.keyCode === 39) {
+                var activeLi = $("ul[id*=textcomplete-dropdown] li.active");
+                var activeIndex = activeLi.index();
+
+                imageQ = "https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=" + data.search[
+                        activeIndex].title +
+                    "&property=P18&format=json"
+
+                imageSource = '';
+
+                try {
+                    var imgText = searchWithGivenQuery(imageQ).claims.P18[0].mainsnak.datavalue.value.split(' ')
+                        .join(
+                            '_');
+                    var hash = md5(imgText);
+                    var a = hash.substring(0, 1);
+                    var b = hash.substring(1, 2);
+                    imageSource = "https://upload.wikimedia.org/wikipedia/commons/" + a + "/" + a + b +
+                        "/" + imgText;
+                } catch (e) {
+                    console.log("Image not found");
+                }
+                openDiag(words[activeIndex], imageSource, data.search[activeIndex].description);
+                return true;
+            }
+        }
+    });
+}
+
+function textReplace()
+{
+    var finText = "";
+    array.forEach(item => 
+    {
+        if(finText == ""){
+            finText = item.data;
+        }
+        else{
+            finText = finText + " " + item.data;
+        }
+        
+    });
+    document.getElementById('searchQuery').innerHTML = finText;
+}
+</script>

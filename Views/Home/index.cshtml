@@ -1,4 +1,4 @@
-@model List<core.Models.Memories>
+@model List<core.ViewModel.MemoryIndexViewModel>
 
 <div id="modalHolder" style="display: none;">
     <div id="modal">
@@ -13,14 +13,17 @@
         <p id="searchQuery">Search Query:</p>
         <div class="text-center">
             <br>
-            <button class="btn-primary" id="button-dialog" onclick="">Tom's Search</button>
-            <button style="height: 26px;" onclick="">Search by Instance</button>
-            <button style="height: 26px;" onclick="">Search by Properity</button>
-            <button style="height: 26px;" onclick="">Search by Subclass</button>
+            <span id="searchInput" style="display:none">
+                []
+            </span>
+            <button class="btn-primary" id="button-dialog" onclick="generalSearch(0)">Tom's Search</button>
+            <button style="height: 26px;" onclick="generalSearch(2)">Search by Instance</button>
+            <button style="height: 26px;" onclick="generalSearch(1)">Search by Properity</button>
+            <button style="height: 26px;" onclick="generalSearch(3)">Search by Subclass</button>
         </div>
     </div>
     <div id="minDiv" class="main">
-        <div>
+        <div id="JumboHolderDiv">
             <div class="add-memory-header">
                 <div style="display: inline-block; width: 100%;">
                     <div style="float: right;">
@@ -29,11 +32,12 @@
             </div>
             <br>
             <br>
-            @foreach (var title in Model)
+            @foreach (var evrything in Model)
             {
                 <div class="jumbotron">
                 <h3>
-                    <a href="../Home/MemoryView/@title.Id">@title.MemoryTitle</a>
+                    <a  href="../Home/MemoryView/@evrything.Memory.Id">@evrything.Memory.MemoryTitle</a>
+                    <span>@evrything.Score</span>
                 </h3>
                 </div>
             }
@@ -70,8 +74,16 @@
             var activeIndex = activeLi.index();
             array.push({"data" : word, "title" : data.search[activeIndex].title})
             $('.ql-editor').append('<a class="wikidata" data-instances="21627" href="' + data.search[i].url + '">' + word + '</a>');
+            
+            var spanSearchInput = $('#searchInput');
+            var jsonArray = [];
+            jsonArray = convertStringToJson(spanSearchInput.text());            
+            jsonArray.push(data.search[activeIndex].title);
+            spanSearchInput.text(JSON.stringify(jsonArray));
+            
             annotationAutoCompleteActivate();
             setTimeout(textReplace(),20);
+
             return '';
         }
     }], {

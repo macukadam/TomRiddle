@@ -4,7 +4,7 @@
 </div>
 
 <div class="container">
-    <h1 id='heading' class="text-center">Tom Riddle Memory Hall</h1>
+    <h1 id='heading' class="text-center">Memory Hall</h1>
     <hr>
     <div id="textDiv" style="display:none" class="form-group">
         <label for="textarea">WikiData data search:</label>
@@ -16,8 +16,8 @@
                 <div style="display: inline-block; width: 100%;">
                     <div style="float: right;">
 
-                        <button style="height: 26px;" onclick="searchByInsance()">Search by Instance</button>
-                        <button style="height: 26px;" onclick="getPropertiesFromMemo()">Search by Properities</button>
+                        <button style="height: 26px;" onclick="searchByInstanceNew()">Search by Instance</button>
+                        <button style="height: 26px;" onclick="searchByPropertyNew()">Search by Properities</button>
                         <button class="btn-primary" id="button-dialog" onclick="autoCompleteSwitch()">WikiData
                             Annotation</button>
                     </div>
@@ -33,21 +33,21 @@
             <h1 id="memtitle"></h1>
             
             <span id="hiddenProperties" style="display:none">
-                
+                []
             </span>
             <span id="hiddenTitles" style="display:none">
-                
+                []
             </span>
             <span id="hiddenSubclasses" style="display:none">
-                
+                []
             </span>
             <span id="hiddenInstances" style="display:none">
-                
+                []
             </span>
             
             <div style="width: 100%;" id="editor" class="ql-container ql-snow">
                 <div class="ql-editor" data-gramm="false" contenteditable="true" data-placeholder="Compose an epic...">
-                    <p>asdas</p>
+                     
                 </div>
                 <div class="ql-clipboard" contenteditable="true" tabindex="-1"></div>
                 <div class="ql-tooltip ql-hidden"><a class="ql-preview" target="_blank" href="about:blank"></a><input
@@ -62,7 +62,6 @@
 
 <script>
     function save() {
-
         $.ajax({
             "url": "/home/save",
             "type": "POST",
@@ -70,10 +69,10 @@
             "timeout": 10000,
             "data": {
                 "Title": $('#titleInput').val(),
-                "HiddenProperties": $('#hiddenProperties').val(),
-                "HiddenTitles": $('#hiddenTitles').val(),
-                "HiddenSubclasses": $('#hiddenSubclasses').val(),
-                "HiddenInstances": $('#hiddenInstances').val(),
+                "HiddenProperties": $('#hiddenProperties').text(),
+                "HiddenTitles": $('#hiddenTitles').text(),
+                "HiddenSubclasses": $('#hiddenSubclasses').text(),
+                "HiddenInstances": $('#hiddenInstances').text(),
                 "Content": $('.ql-editor').html()
             }
         }).done(function (data, textStatus, jqxhr) {

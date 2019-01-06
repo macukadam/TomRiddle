@@ -6,26 +6,67 @@ var finalArray = [];
 
 searchBarAutoCompleteActivate();
 
-function searchTextOnWikidata(text) {
-    const Http = new XMLHttpRequest();
-    const url = wdk.searchEntities(text, 'en', 20, 'json');
-    Http.open("GET", url, false);
-    Http.send();
-    if (Http.readyState == 4 && Http.status == 200) {
-        var response = JSON.parse(Http.response);
-        return response;
-    }
-}
+function searchBarAutoCompleteActivate() {
+    var words = [];
+    var data = {};
+    $('#qryinput').textcomplete([{
+        match: /(^|\b)(\w{2,})$/,
+        search: function (term, callback) {
 
-function searchWithGivenQuery(query) {
-    const Http = new XMLHttpRequest();
-    const url = query
-    Http.open("GET", url, false);
-    Http.send();
-    if (Http.readyState == 4 && Http.status == 200) {
-        var response = JSON.parse(Http.response);
-        return response;
-    }
+            data = searchTextOnWikidata($('#qryinput').val());
+            words = [];
+            data.search.forEach(element => {
+                words.push(element.label);
+            });
+            callback($.map(words, function (word) {
+                return word;
+            }));
+        },
+        replace: function (word) {
+            var i = 0;
+            for (i; i < words.length; i++) {
+                if (words[i] == word) {
+                    break;
+                }
+            }
+
+            $('#qryinput').remove();
+            $('#queryInputHolder').append('<textarea id="qryinput" type="text" style="resize: none; height: 26px;">' + data.search[i].title +'</textarea>');
+
+            searchBarAutoCompleteActivate();
+
+            return data.search[i].title;
+        }
+    }], {
+        maxCount: 20,
+        onKeydown: function (e, commands) {
+            if (e.keyCode === 39) {
+                var activeLi = $("ul[id*=textcomplete-dropdown] li.active");
+                var activeIndex = activeLi.index();
+
+                imageQ = "https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=" + data.search[
+                        activeIndex].title +
+                    "&property=P18&format=json"
+
+                imageSource = '';
+
+                try {
+                    var imgText = searchWithGivenQuery(imageQ).claims.P18[0].mainsnak.datavalue.value.split(' ')
+                        .join(
+                            '_');
+                    var hash = md5(imgText);
+                    var a = hash.substring(0, 1);
+                    var b = hash.substring(1, 2);
+                    imageSource = "https://upload.wikimedia.org/wikipedia/commons/" + a + "/" + a + b +
+                        "/" + imgText;
+                } catch (e) {
+                    console.log("Image not found");
+                }
+                openDiag(words[activeIndex], imageSource, data.search[activeIndex].description);
+                return true;
+            }
+        }
+    });
 }
 
 function convertStringToJson(JsonString){
@@ -51,6 +92,29 @@ function addNewItemToArray(JsonArray, title){
             "item":title,
         })
     }
+}
+
+function getPropertiesOfItem(item){
+    responseArray = [];
+    var response = searchWithGivenQuery("https://www.wikidata.org/wiki/Special:EntityData/" + item + ".json");
+        var entities = response.entities;
+        for (var entity in entities) {
+            var tempArray = [];
+            var claims = entities[entity].claims;
+            for (var t in claims) {
+                var claim = claims[t];
+                for (var k in claim) {
+                    try {
+                        var value = claim[k].mainsnak.datavalue.value;
+                        var id = value.id;
+                        if (id != null) {
+                            tempArray.push(id);
+                        }
+                    } catch (error) {}
+                }
+            }
+        }
+        return tempArray;
 }
 
 function annotationAutoCompleteActivate() {
@@ -92,6 +156,7 @@ function annotationAutoCompleteActivate() {
             $('.ql-editor').append('<a class="wikidata" data-instances="21627" href="' + data.search[i].url + '">' + word + '</a>');
             $('#textarea').remove();
             $('#textDiv').append('<textarea class="form-control" id="textarea" style="resize: none;"></textarea>');
+
             annotationAutoCompleteActivate();
             return '';
         }
@@ -171,27 +236,42 @@ function annotationAutoCompleteActivate() {
     }
 }
 
-function getPropertiesOfItem(item){
-    responseArray = [];
-    var response = searchWithGivenQuery("https://www.wikidata.org/wiki/Special:EntityData/" + item + ".json");
-        var entities = response.entities;
-        for (var entity in entities) {
-            var tempArray = [];
-            var claims = entities[entity].claims;
-            for (var t in claims) {
-                var claim = claims[t];
-                for (var k in claim) {
-                    try {
-                        var value = claim[k].mainsnak.datavalue.value;
-                        var id = value.id;
-                        if (id != null) {
-                            tempArray.push(id);
-                        }
-                    } catch (error) {}
-                }
-            }
-        }
-        return tempArray;
+function autoCompleteSwitch() {
+    if (!autoCopleteActivated) {
+        annotationAutoCompleteActivate();
+        $('#textDiv').show();
+        autoCopleteActivated = true;
+    } else {
+        destroyAutoComplete();
+        autoCopleteActivated = false;
+        $('#textDiv').hide();
+    }
+}
+
+function destroyAutoComplete() {
+    $('#textarea').textcomplete('destroy');
+}
+
+function searchTextOnWikidata(text) {
+    const Http = new XMLHttpRequest();
+    const url = wdk.searchEntities(text, 'en', 20, 'json');
+    Http.open("GET", url, false);
+    Http.send();
+    if (Http.readyState == 4 && Http.status == 200) {
+        var response = JSON.parse(Http.response);
+        return response;
+    }
+}
+
+function searchWithGivenQuery(query) {
+    const Http = new XMLHttpRequest();
+    const url = query
+    Http.open("GET", url, false);
+    Http.send();
+    if (Http.readyState == 4 && Http.status == 200) {
+        var response = JSON.parse(Http.response);
+        return response;
+    }
 }
 
 function hiddenInstanceObjectCreator(item){
@@ -242,7 +322,7 @@ function recursiveInstanceSearch(givenArray, diffArray) {
 
     var newDiffArray = [];
     if (diffArray.length != 0) {
-        recursivePropSearch(diffArray, newDiffArray);
+        recursiveInstanceSearch(diffArray, newDiffArray);
     } 
 
 }
@@ -295,71 +375,9 @@ function recursiveSubclassSearch(givenArray, diffArray) {
 
     var newDiffArray = [];
     if (diffArray.length != 0) {
-        recursivePropSearch(diffArray, newDiffArray);
+        recursiveSubclassSearch(diffArray, newDiffArray);
     } 
 
-}
-
-function searchBarAutoCompleteActivate() {
-    var words = [];
-    var data = {};
-    $('#qryinput').textcomplete([{
-        match: /(^|\b)(\w{2,})$/,
-        search: function (term, callback) {
-
-            data = searchTextOnWikidata($('#qryinput').val());
-            words = [];
-            data.search.forEach(element => {
-                words.push(element.label);
-            });
-            callback($.map(words, function (word) {
-                return word;
-            }));
-        },
-        replace: function (word) {
-            var i = 0;
-            for (i; i < words.length; i++) {
-                if (words[i] == word) {
-                    break;
-                }
-            }
-
-            $('#qryinput').remove();
-            $('#queryInputHolder').append('<textarea id="qryinput" type="text" style="resize: none; height: 26px;">' + data.search[i].title +'</textarea>');
-            searchBarAutoCompleteActivate();
-
-            return data.search[i].title;
-        }
-    }], {
-        maxCount: 20,
-        onKeydown: function (e, commands) {
-            if (e.keyCode === 39) {
-                var activeLi = $("ul[id*=textcomplete-dropdown] li.active");
-                var activeIndex = activeLi.index();
-
-                imageQ = "https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=" + data.search[
-                        activeIndex].title +
-                    "&property=P18&format=json"
-
-                imageSource = '';
-
-                try {
-                    var imgText = searchWithGivenQuery(imageQ).claims.P18[0].mainsnak.datavalue.value.split(' ')
-                        .join(
-                            '_');
-                    var hash = md5(imgText);
-                    var a = hash.substring(0, 1);
-                    var b = hash.substring(1, 2);
-                    imageSource = "https://upload.wikimedia.org/wikipedia/commons/" + a + "/" + a + b +
-                        "/" + imgText;
-                } catch (e) {
-                    console.log("Image not found");
-                }
-                openDiag(words[activeIndex], imageSource, data.search[activeIndex].description);
-                return true;
-            }
-        }
-    });
 }
 
 function closeDiag() {
@@ -380,22 +398,6 @@ function openDiag(title, imgSource, content) {
         .dialog({});
 }
 
-function autoCompleteSwitch() {
-    if (!autoCopleteActivated) {
-        annotationAutoCompleteActivate();
-        $('#textDiv').show();
-        autoCopleteActivated = true;
-    } else {
-        destroyAutoComplete();
-        autoCopleteActivated = false;
-        $('#textDiv').hide();
-    }
-}
-
-function destroyAutoComplete() {
-    $('#textarea').textcomplete('destroy');
-}
-
 //Sparql queries
 function getInstances(item) {
     var instance = 'P31';
@@ -413,40 +415,7 @@ function getInstances(item) {
     return url;
 }
 
-
-function searchByOneEntity(varQ) {
-    var tempArray = [];
-
-    var response = searchWithGivenQuery("https://www.wikidata.org/wiki/Special:EntityData/" + varQ + ".json");
-    var entities = response.entities;
-    for (var entity in entities) {
-        var claims = entities[entity].claims;
-        var P31 = claims.P31;
-        for (var index in P31) {
-            var value = P31[index].mainsnak.datavalue.value;
-            var id = value.id;
-            if (id != null) {
-                tempArray.push(id);
-            }
-        }
-
-        var P279 = claims.P279;
-        for (var index in P279) {
-            var value = P279[index].mainsnak.datavalue.value;
-            var id = value.id;
-            if (id != null) {
-                tempArray.push(id);
-            }
-        }
-    }
-
-    var diffArray = [];
-    finalArray = [];
-    finalArray = finalArray.concat(tempArray);
-    recursivePropSearch(tempArray, diffArray);
-    return finalArray;
-}
-
+//NIU OLD
 function searchByInsance() {
     var searchText = $('#qryinput').val();
     var select = document.querySelectorAll('p > a');
@@ -467,73 +436,22 @@ function searchByInsance() {
                     tempArray.push(id);
                 }
             }
-            
-            //var P279 = claims.P279;
-            //for (var index in P279) {
-            //    var value = P279[index].mainsnak.datavalue.value;
-            //    var id = value.id;
-            //    if (id != null) {
-            //       tempArray.push(id);
-            //    }
-            //}
         }
     }
     var diffArray = [];
     finalArray = [];
     finalArray = finalArray.concat(tempArray);
+    recursiveInstanceSearch(tempArray, diffArray);
 
-    if(document.getElementById('rRadio').checed){
-        recursivePropSearch(tempArray, diffArray, true, true);
-    }
+    finalArray.forEach(function (val) {
+        alert(val.includes(searchText));
+    })
+
     return finalArray;
 }
 
-function recursivePropSearch(givenArray, diffArray, isInstance, isProp) {
-    givenArray.forEach(element => {
-        var response = searchWithGivenQuery("https://www.wikidata.org/wiki/Special:EntityData/" + element + ".json");
-        var entities = response.entities;
-        for (var entity in entities) {
-            var claims = entities[entity].claims;
-
-            //Search by instances
-            if(isInstance == true)
-            {
-                var P31 = claims.P31;
-                for (var index in P31) {
-                    var value = P31[index].mainsnak.datavalue.value;
-                    var id = value.id;
-                    if (id != null) {
-                        if (!finalArray.includes(id)) {
-                            diffArray.push(id);
-                            finalArray.push(id);
-                        }
-                    }
-                }
-            }
-            
-            //Search by prop values
-            if(isProp == true){
-                var P279 = claims.P279;
-                for (var index in P279) {
-                    var value = P279[index].mainsnak.datavalue.value;
-                    var id = value.id;
-                    if (id != null) {
-                        if (!finalArray.includes(id)) {
-                            diffArray.push(id);
-                            finalArray.push(id);
-                        }
-                    }
-                }
-            }
-        }
-    });
-    var newDiffArray = [];
-    if (diffArray.length != 0) {
-        recursivePropSearch(diffArray, newDiffArray);
-    } 
-}
-
-function getPropertiesFromMemo() {
+//Alert if exist NIU OLD
+function searchByProperty() {
     var searchText = $('#qryinput').val();
     var select = document.querySelectorAll('p > a');
     var responseArray = [];
@@ -564,4 +482,104 @@ function getPropertiesFromMemo() {
         alert(val.includes(searchText));
     })
     return responseArray;
+}
+
+function searchByInstanceNew(){
+    hiddenInstance = convertStringToJson($('#hiddenInstances').text());
+    
+    var searchText = $('#qryinput').val();
+
+    var result = searchInJson(hiddenInstance, "item", searchText);
+
+    alert(result[0]["item"] + " " + "found " + result[0]["count"] + " times.")
+}
+
+function searchByPropertyNew(){
+    hiddenProperties = convertStringToJson($('#hiddenProperties').text());
+    
+    var searchText = $('#qryinput').val();
+
+    var result = searchInJson(hiddenProperties, "item", searchText);
+
+    alert(result[0]["item"] + " " + "found " + result[0]["count"] + " times.")
+}
+
+function searchInJson(jsonArray, searchField, searchVal){
+    var results = [];
+
+    for (var i=0 ; i < jsonArray.length ; i++)
+    {
+        if (jsonArray[i][searchField] == searchVal) {
+            results.push(jsonArray[i]);
+        }
+    }
+    return results;
+}
+
+
+// Searches from DB....
+function generalSearch(index){
+
+    var spanSearchInput = $('#searchInput');
+    var text = convertStringToJson(spanSearchInput.text());            
+
+    $.ajax({
+        type: "GET",
+        url: "/home/GetDataFromMemo",
+        data: {
+            "text":JSON.stringify(text),
+            "searchType":index
+        },
+        dataType: "json"
+    })
+    .done(function(response) {
+        jumboRemove();
+        response.forEach(el => {
+            if(el.score>0){
+                jumboPush(el.memory.id,el.memory.memoryTitle,el.score);
+            }
+        });
+        
+        array = [];
+        $('#searchQuery').text('');
+        console.log(response);
+    })
+    .fail(function (jqXHR, exception) {
+        var msg_err = "";
+        if (jqXHR.status === 0) {
+            msg_err = "Not connect. Verify Network.";
+        } else if (jqXHR.status == 404) {
+            msg_err = "Requested page not found. [404]";
+        } else if (jqXHR.status == 500) {
+            msg_err = "Internal Server Error [500].";
+        } else if (exception === "parsererror") {
+            msg_err = "Requested JSON parse failed.";
+        } else if (exception === "timeout") {
+            msg_err = "Time out error.";
+        } else if (exception === "abort") {
+            msg_err = "Ajax request aborted.";
+        } else {
+            msg_err = "Uncaught Error. "+ jqXHR.responseText;
+        }
+        array = [];
+        $('#searchQuery').text('');
+        alert(msg_err);
+    })
+    .always(function() {
+    });
+}
+
+function jumboPush(Id, Title, Score){
+    var jumbo = 
+    '<div class="jumbotron">' + 
+        '<h3>' + 
+            '<a  href="../Home/MemoryView/'+ Id +'">' + Title + '</a>' + 
+        '</h3>' + 
+        '<p>Tom\'s Score: ' + Score + '</p>' + 
+    '</div>';
+    $("#JumboHolderDiv").append(jumbo);
+}
+
+function jumboRemove(){
+    $("div[class='jumbotron']").remove();
 }

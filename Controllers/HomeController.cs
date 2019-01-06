@@ -5,6 +5,9 @@ using core.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using core.Factory;
+using core.Enums;
 
 namespace core.Controllers
 {
@@ -17,11 +20,13 @@ namespace core.Controllers
             _context = context;
         }
 
+        [HttpGet]
         public IActionResult Index()
         {
-            return View(_context.Memories.ToList());
+            return View(new List<MemoryIndexViewModel>());
         }
 
+        [HttpGet]
         public IActionResult MemoryView(int id)
         {
             var entryPoint = (from ep in _context.Memories
@@ -47,11 +52,13 @@ namespace core.Controllers
             return View(viewModel);
         }
 
+        [HttpGet]
         public IActionResult MemoryCreate()
         {
             return View();
         }
 
+        [HttpPost]
         public IActionResult Save(MemoryCreateViewModel viewModel)
         {
             var memo = _context.Memories.Add(new Memories()
@@ -89,6 +96,28 @@ namespace core.Controllers
 
             _context.SaveChanges();
             return null;
+        }
+    
+        [HttpGet]
+        public List<MemoryIndexViewModel> GetDataFromMemo(SearchJsonObject searchObject){
+            
+            List<MemoryIndexViewModel> miv = new List<MemoryIndexViewModel>();
+            List<FrequencyQItem> resultQItems = new List<FrequencyQItem>();
+            
+            _context.Memories.ToList().ForEach(memo => {
+                _context.Items.Include(i => i.Memo).Include(i => i.TypeOf).Where(f=> f.Memo == memo).ToList().ForEach(freq =>{
+                    var contextObject = JsonConvert.DeserializeObject<List<FrequencyQItem>>(freq.Context).ToList();
+                    contextObject.ForEach(i=> i.TypeOfId = freq.TypeOf.Id);
+                    resultQItems.AddRange(contextObject);
+                    });
+
+                    TomFactory factory = new TomFactory();
+                    
+                    var searchArray = JsonConvert.DeserializeObject<List<string>>(searchObject.Text).ToArray();
+                    miv.Add(factory.create((SearchType)searchObject.SearchType, memo, resultQItems ,searchArray));
+                    resultQItems = new List<FrequencyQItem>();
+                });
+            return miv.OrderByDescending(m=>m.Score).ToList();
         }
     }
 }
